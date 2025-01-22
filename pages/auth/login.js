@@ -12,11 +12,7 @@ export default function Login() {
   useEffect(() => {
     if (session?.user) {
       console.log('Session found:', session);
-      if (session.user.is_approved || session.user.role === 'admin') {
-        router.push('/estimates');
-      } else {
-        router.push('/');
-      }
+      router.push('/estimates').catch(console.error);
     }
   }, [session, router]);
 
@@ -49,8 +45,15 @@ export default function Login() {
 
       console.log('Login result:', result);
 
-      if (result.error) {
+      if (result?.error) {
         throw new Error(result.error);
+      }
+
+      // Force redirect on successful login
+      if (result?.ok) {
+        console.log('Login successful, redirecting to /estimates');
+        router.push('/estimates');
+        return;
       }
     } catch (err) {
       console.error('Login error:', err);

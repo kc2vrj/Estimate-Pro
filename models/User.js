@@ -51,6 +51,12 @@ class User {
     if (!admin) {
       console.log('Creating admin user...');
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      console.log('Generated hash length:', hashedPassword.length);
+      
+      // Verify the hash works
+      const verifyHash = await bcrypt.compare(adminPassword, hashedPassword);
+      console.log('Verified hash works:', verifyHash);
+      
       db.prepare(
         'INSERT INTO users (email, password, name, role, is_approved) VALUES (?, ?, ?, ?, ?)'
       ).run(adminEmail, hashedPassword, 'Admin', 'admin', 1);
@@ -98,7 +104,12 @@ class User {
   }
 
   static async validatePassword(user, password) {
-    return bcrypt.compare(password, user.password);
+    console.log('Validating password for user:', user.email);
+    console.log('Stored password hash length:', user.password.length);
+    console.log('Input password length:', password.length);
+    const isValid = await bcrypt.compare(password, user.password);
+    console.log('Password validation result:', isValid);
+    return isValid;
   }
 
   static async authenticate(email, password) {

@@ -4,6 +4,7 @@ import User from '../../../models/User';
 
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET || 'your-secret-key',
+  debug: true, // Enable debug mode
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -13,19 +14,28 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('NextAuth authorize called with email:', credentials.email);
+          console.log('NextAuth received password length:', credentials.password?.length);
+          
           const result = await User.authenticate(credentials.email, credentials.password);
+          console.log('Authentication result:', result ? 'Success' : 'Failed');
           
           if (!result) {
+            console.log('Authentication failed - no result returned');
             throw new Error('Invalid email or password');
           }
 
-          return {
+          const user = {
             id: result.id.toString(),
             email: result.email,
             name: result.name,
             role: result.role
           };
+          
+          console.log('Returning authenticated user:', user);
+          return user;
         } catch (error) {
+          console.error('Authentication error:', error.message);
           throw new Error(error.message);
         }
       }
@@ -60,8 +70,7 @@ export const authOptions = {
   pages: {
     signIn: '/auth/login',
     error: '/auth/error'
-  },
-  debug: process.env.NODE_ENV === 'development'
+  }
 };
 
 export default NextAuth(authOptions);

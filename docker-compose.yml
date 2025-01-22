@@ -7,8 +7,6 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/app/data
-      - ./database.sqlite:/app/database.sqlite
-      - ./estimates.db:/app/estimates.db
     environment:
       - NODE_ENV=production
     restart: unless-stopped

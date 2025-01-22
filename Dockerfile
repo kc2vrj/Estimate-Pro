@@ -20,6 +20,12 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
+# Create data directory
+RUN mkdir -p data
+
+# Initialize the database
+RUN node scripts/init-db.js
+
 # Build the Next.js application
 RUN npm run build
 

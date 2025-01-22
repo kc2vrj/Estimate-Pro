@@ -28,13 +28,40 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      const { id, created_at, updated_at, ...rest } = initialData;
+      setFormData(rest);
       setRows(initialData.rows || []);
       if (initialData.totals) {
         setTotals(initialData.totals);
       }
     }
   }, [initialData]);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        nav, header, .print-hide {
+          display: none !important;
+        }
+        body {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .print-content {
+          padding: 20px !important;
+        }
+        .print-break-inside-avoid {
+          break-inside: avoid;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const generatePDF = () => {
     window.print();
@@ -98,7 +125,10 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
   };
 
   const calculateTotals = (currentRows) => {
-    const subtotal = currentRows.reduce((sum, row) => sum + (Number(row.total) || 0), 0);
+    const subtotal = currentRows.reduce((sum, row) => {
+      const total = Number(row.total) || 0;
+      return sum + total;
+    }, 0);
     const salesTax = 0;
     const total = subtotal + salesTax;
 
@@ -109,39 +139,80 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
     });
   };
 
+  const validateForm = () => {
+    if (!formData.date) return 'Date is required';
+    if (!formData.number) return 'Estimate number is required';
+    if (!formData.salesRep) return 'Sales Rep is required';
+    
+    // Validate rows
+    for (const row of rows) {
+      if (!row.quantity || !row.description || !row.price) {
+        return 'All line items must have quantity, description, and price';
+      }
+    }
+    
+    return null;
+  };
+
   const saveEstimate = async () => {
     try {
+      // Validate form
+      const error = validateForm();
+      if (error) {
+        alert(error);
+        return;
+      }
+
+      // Calculate final totals before saving
+      calculateTotals(rows);
+
+      // Prepare data
+      const cleanedRows = rows.map(row => ({
+        quantity: Number(row.quantity) || 0,
+        description: row.description || '',
+        cost: Number(row.cost) || 0,
+        price: Number(row.price) || 0,
+        total: Number(row.total) || 0
+      }));
+
       const estimateData = {
         ...formData,
-        rows,
-        totals,
+        rows: cleanedRows,
+        subtotal: Number(totals.subtotal),
+        salesTax: Number(totals.salesTax),
+        total: Number(totals.total)
       };
 
-      const url = isEditing ? `/api/estimates?id=${initialData.id}` : '/api/estimates';
+      console.log('[Form] Saving estimate:', estimateData);
+
+      const url = isEditing ? `/api/estimates/${initialData.id}` : '/api/estimates';
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(estimateData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save estimate');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save estimate');
       }
 
       const result = await response.json();
+      console.log('[Form] Save result:', result);
+      
       alert(isEditing ? 'Estimate updated successfully!' : 'Estimate saved successfully!');
       router.push('/estimates');
     } catch (error) {
-      console.error('Error saving estimate:', error);
-      alert('Error saving estimate. Please try again.');
+      console.error('[Form] Error saving estimate:', error);
+      alert(error.message || 'Error saving estimate');
     }
   };
 
-  // Auto-resize textarea function
   const autoResizeTextArea = (element) => {
     if (element) {
       element.style.height = 'auto';
@@ -149,13 +220,11 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
     }
   };
 
-  // Handle textarea input and auto-resize
   const handleTextAreaChange = (field, value, event) => {
     updateFormData(field, value);
     autoResizeTextArea(event.target);
   };
 
-  // Initialize auto-resize for textareas
   useEffect(() => {
     document.querySelectorAll('textarea').forEach(textarea => {
       autoResizeTextArea(textarea);
@@ -164,9 +233,9 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
   }, []);
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-6 print:p-2 bg-white">
+    <div className="w-full max-w-5xl mx-auto p-6 print:p-2 bg-white print-content">
       {/* Print and Save Buttons */}
-      <div className="flex justify-end gap-4 mb-6 print:hidden">
+      <div className="flex justify-end gap-4 mb-6 print-hide">
         {!readOnly && (
           <button
             onClick={saveEstimate}
@@ -199,51 +268,54 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
               153 Langsdale Rd<br />
               Columbia, SC 29212<br />
               Phone (919) 563-3431<br />
-              www.maytechsystems.com
+              Email: info@maytechsystems.com
             </p>
           </div>
         </div>
-        <div className="w-1/3">
-          <h2 className="text-xl print:text-lg font-bold mb-4 print:mb-2">Estimate</h2>
-          <div className="space-y-2 print:space-y-1">
-            <div className="flex items-center">
-              <label className="w-24">Date:</label>
+        <div className="w-1/2 text-right">
+          <h1 className="text-2xl print:text-xl font-bold mb-4">ESTIMATE</h1>
+          <div className="space-y-2">
+            <div className="flex justify-end gap-2">
+              <label className="font-semibold">Date:</label>
               <input
                 type="date"
-                className="flex-1 p-1 border rounded print:border-none"
                 value={formData.date}
                 onChange={(e) => updateFormData('date', e.target.value)}
-                readOnly={readOnly}
+                disabled={readOnly}
+                className="border rounded px-2 py-1 w-40 disabled:bg-gray-100 print:border-none"
+                required
               />
             </div>
-            <div className="flex items-center">
-              <label className="w-24">Number:</label>
+            <div className="flex justify-end gap-2">
+              <label className="font-semibold">Estimate #:</label>
               <input
                 type="text"
-                className="flex-1 p-1 border rounded print:border-none"
                 value={formData.number}
                 onChange={(e) => updateFormData('number', e.target.value)}
-                readOnly={readOnly}
+                disabled={readOnly}
+                className="border rounded px-2 py-1 w-40 disabled:bg-gray-100 print:border-none"
+                required
               />
             </div>
-            <div className="flex items-center">
-              <label className="w-24">PO#:</label>
+            <div className="flex justify-end gap-2">
+              <label className="font-semibold">PO #:</label>
               <input
                 type="text"
-                className="flex-1 p-1 border rounded print:border-none"
                 value={formData.po}
                 onChange={(e) => updateFormData('po', e.target.value)}
-                readOnly={readOnly}
+                disabled={readOnly}
+                className="border rounded px-2 py-1 w-40 disabled:bg-gray-100 print:border-none"
               />
             </div>
-            <div className="flex items-center">
-              <label className="w-24">Sales Rep:</label>
+            <div className="flex justify-end gap-2">
+              <label className="font-semibold">Sales Rep:</label>
               <input
                 type="text"
-                className="flex-1 p-1 border rounded print:border-none"
                 value={formData.salesRep}
                 onChange={(e) => updateFormData('salesRep', e.target.value)}
-                readOnly={readOnly}
+                disabled={readOnly}
+                className="border rounded px-2 py-1 w-40 disabled:bg-gray-100 print:border-none"
+                required
               />
             </div>
           </div>
@@ -255,19 +327,22 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
         <div className="w-1/2">
           <h3 className="font-semibold mb-2 print:mb-1 print:text-sm">Bill To Address:</h3>
           <textarea
-            className="w-full p-2 border rounded print:h-auto"
+            className="w-full p-2 border rounded print:h-auto print:overflow-visible"
             value={formData.billToAddress}
             onChange={(e) => handleTextAreaChange('billToAddress', e.target.value, e)}
             readOnly={readOnly}
+            rows={4}
           />
         </div>
+
         <div className="w-1/2">
           <h3 className="font-semibold mb-2 print:mb-1 print:text-sm">Work/Ship Address:</h3>
           <textarea
-            className="w-full p-2 border rounded print:h-auto"
+            className="w-full p-2 border rounded print:h-auto print:overflow-visible"
             value={formData.workShipAddress}
             onChange={(e) => handleTextAreaChange('workShipAddress', e.target.value, e)}
             readOnly={readOnly}
+            rows={4}
           />
         </div>
       </div>
@@ -277,19 +352,21 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
         <div>
           <h3 className="font-semibold mb-2 print:mb-1 print:text-sm">Scope of Work:</h3>
           <textarea
-            className="w-full p-2 border rounded print:h-auto"
+            className="w-full p-2 border rounded print:h-auto print:overflow-visible"
             value={formData.scopeOfWork}
             onChange={(e) => handleTextAreaChange('scopeOfWork', e.target.value, e)}
             readOnly={readOnly}
+            rows={5}
           />
         </div>
         <div>
           <h3 className="font-semibold mb-2 print:mb-1 print:text-sm">Exclusions:</h3>
           <textarea
-            className="w-full p-2 border rounded print:h-auto"
+            className="w-full p-2 border rounded print:h-auto print:overflow-visible"
             value={formData.exclusions}
             onChange={(e) => handleTextAreaChange('exclusions', e.target.value, e)}
             readOnly={readOnly}
+            rows={5}
           />
         </div>
       </div>
@@ -349,9 +426,9 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
                 </td>
                 <td className="p-2 print:p-1 border total-col">
                   <input
+                    value={row.total}
                     type="text"
                     className="w-full p-1 border rounded print:border"
-                    value={row.total}
                     readOnly
                   />
                 </td>
@@ -397,6 +474,35 @@ const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false 
             <div className="flex justify-between font-bold">
               <span>Total:</span>
               <span>${totals.total}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Signature Section */}
+      <div className="grid grid-cols-2 gap-8 mt-8">
+        <div>
+          <p className="font-semibold mb-2">Acceptance of Estimate:</p>
+          <p>The above prices, specifications and conditions are satisfactory and are hereby accepted. You are authorized to do the work as specified.</p>
+          
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="font-semibold">Signature: _______________________</p>
+            </div>
+            <div>
+              <p className="font-semibold">Date: _________________________</p>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <p className="font-semibold mb-2">Authorized by Maytech Systems LLC:</p>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="font-semibold">Signature: _______________________</p>
+            </div>
+            <div>
+              <p className="font-semibold">Date: _________________________</p>
             </div>
           </div>
         </div>

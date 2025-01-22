@@ -54,18 +54,12 @@ textarea {
   }
 
   .address-section textarea {
-    min-height: 1.5in !important;
-    height: 1.5in !important;
-    overflow: visible !important;
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
+    min-height: 80px !important;
   }
 
   /* Scope section specific print styles */
   .scope-section textarea {
-    font-size: 0.875rem !important;
-    line-height: 1.4 !important;
-    min-height: fit-content !important;
+    min-height: 100px !important;
   }
 
   /* Table styles for full width */
@@ -75,10 +69,10 @@ textarea {
   }
 
   /* Adjust column widths */
-  .quantity-col { width: 10% !important; }
-  .description-col { width: 40% !important; }
-  .price-col { width: 15% !important; }
-  .total-col { width: 15% !important; }
+  .quantity-col { width: 80px !important; }
+  .description-col { min-width: 300px !important; }
+  .price-col { width: 100px !important; }
+  .total-col { width: 100px !important; }
 
   /* Reduce overall spacing */
   .mb-6 { margin-bottom: 0.25rem !important; }
@@ -99,5 +93,42 @@ textarea {
 
   .rounded {
     border-radius: 0.25rem !important;
+  }
+
+  nav, header, .print-hide {
+    display: none !important;
+  }
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .print-content {
+    padding: 20px !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+  
+  /* Ensure text is visible in boxes */
+  input, textarea {
+    height: auto !important;
+    min-height: fit-content !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+  }
+  
+  /* Remove borders and backgrounds for cleaner look */
+  input, textarea {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+  
+  /* Ensure table cells expand to fit content */
+  td {
+    height: auto !important;
+    white-space: normal !important;
+    overflow: visible !important;
   }
 }

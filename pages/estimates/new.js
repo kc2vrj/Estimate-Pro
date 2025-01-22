@@ -7,7 +7,7 @@ export default function NewEstimatePage() {
 
   return (
     <div>
-      <div className="p-6">
+      <div className="p-6 print-hide">
         <button
           onClick={() => router.push('/estimates')}
           className="flex items-center text-blue-600 hover:text-blue-800 mb-4"

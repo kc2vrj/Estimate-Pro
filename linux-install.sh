@@ -121,6 +121,11 @@ install_nodejs
 # Create application user if it doesn't exist
 if ! id -u estimatepro &>/dev/null; then
     useradd -m -s /bin/bash estimatepro
+    # Verify user was created successfully
+    if ! id -u estimatepro &>/dev/null; then
+        echo "Failed to create user estimatepro"
+        exit 1
+    fi
     echo "Created user: estimatepro"
 fi
 
@@ -131,26 +136,32 @@ chown estimatepro:estimatepro $APP_DIR
 
 # Clone the repository (if deploying from git)
 if [ ! -d "$APP_DIR/.git" ]; then
-    su - estimatepro -c "git clone https://github.com/kc2vrj/Estimate-Pro.git $APP_DIR"
+    su estimatepro -c "git clone https://github.com/kc2vrj/Estimate-Pro.git $APP_DIR"
 else
     echo "Git repository already exists, pulling latest changes..."
     cd $APP_DIR
-    su - estimatepro -c "cd $APP_DIR && git pull"
+    su estimatepro -c "cd $APP_DIR && git pull"
 fi
 
-# Install npm dependencies
+# Install npm dependencies with legacy peer deps to avoid warnings
 cd $APP_DIR
-su - estimatepro -c "cd $APP_DIR && npm install"
+su estimatepro -c "cd $APP_DIR && npm install --legacy-peer-deps"
+
+# Update npm to latest version
+su estimatepro -c "cd $APP_DIR && npm install -g npm@latest"
+
+# Clean up deprecated packages
+su estimatepro -c "cd $APP_DIR && npm audit fix"
 
 # Create data directory with proper permissions
 mkdir -p $APP_DIR/data
 chown estimatepro:estimatepro $APP_DIR/data
 
 # Setup the database
-su - estimatepro -c "cd $APP_DIR && npm run setup"
+su estimatepro -c "cd $APP_DIR && npm run setup"
 
 # Build the application
-su - estimatepro -c "cd $APP_DIR && npm run build"
+su estimatepro -c "cd $APP_DIR && npm run build"
 
 # Setup systemd service
 setup_systemd

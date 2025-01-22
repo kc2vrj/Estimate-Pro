@@ -197,6 +197,8 @@ if [ "$INSTALL_STATUS" -eq 0 ] || [ "$INSTALL_STATUS" -eq 1 ]; then
         echo "Update cancelled"
         exit 0
     fi
+else
+    echo "No existing installation found. Starting fresh installation..."
 fi
 
 # Continue with fresh installation

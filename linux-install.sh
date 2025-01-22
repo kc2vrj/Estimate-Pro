@@ -43,7 +43,7 @@ update_installation() {
     echo "Updating Estimate Pro..."
     
     # Stop the service
-    systemctl stop estimate-pro
+    systemctl stop estimate-pro || true
 
     # Backup database
     backup_database
@@ -54,9 +54,6 @@ update_installation() {
 
     # Update npm dependencies
     su estimatepro -c "cd $APP_DIR && npm install --legacy-peer-deps"
-
-    # Update npm to latest version
-    su estimatepro -c "cd $APP_DIR && npm install -g npm@latest"
 
     # Run any database migrations if they exist
     if [ -f "$APP_DIR/scripts/migrate.js" ]; then
@@ -95,6 +92,8 @@ install_nodejs() {
                 exit 1
                 ;;
         esac
+    else
+        echo "Node.js is already installed"
     fi
 }
 

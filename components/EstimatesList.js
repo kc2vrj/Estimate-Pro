@@ -99,43 +99,47 @@ export default function EstimatesList() {
             <ul className="divide-y divide-gray-200">
               {estimates.map((estimate) => (
                 <li key={estimate.id} className="relative">
-                  <Link href={`/estimates/${estimate.id}`} className="block hover:bg-gray-50">
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <p className="text-sm font-medium text-indigo-600 truncate">
-                            {estimate.number || `Estimate #${estimate.id}`}
-                          </p>
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex items-center space-x-4">
-                          <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            ${estimate.total.toFixed(2)}
-                          </p>
-                          <button
-                            onClick={() => handleDelete(estimate.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                  <div className="px-4 py-4 sm:px-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Link 
+                          href={`/estimates/${estimate.id}`}
+                          className="text-sm font-medium text-indigo-600 truncate hover:text-indigo-900"
+                        >
+                          {estimate.number || `Estimate #${estimate.id}`}
+                        </Link>
                       </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            {estimate.date}
-                          </p>
-                          {estimate.po && (
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              PO: {estimate.po}
-                            </p>
-                          )}
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <p>{estimate.salesRep}</p>
-                        </div>
+                      <div className="ml-2 flex-shrink-0 flex items-center space-x-4">
+                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          ${estimate.total.toFixed(2)}
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDelete(estimate.id);
+                          }}
+                          className="text-red-600 hover:text-red-900 px-3 py-1 rounded-md text-sm font-medium"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
-                  </Link>
+                    <div className="mt-2 sm:flex sm:justify-between">
+                      <div className="sm:flex">
+                        <p className="flex items-center text-sm text-gray-500">
+                          {estimate.date}
+                        </p>
+                        {estimate.po && (
+                          <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                            PO: {estimate.po}
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                        <p>{estimate.salesRep}</p>
+                      </div>
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>

@@ -8,31 +8,22 @@ export const authOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         try {
-          const user = await User.findByEmail(credentials.email);
-          if (!user) {
-            throw new Error('No user found with this email');
-          }
-
-          const isValid = await User.validatePassword(user, credentials.password);
-          if (!isValid) {
-            throw new Error('Invalid password');
-          }
-
-          if (!user.is_approved && user.role !== 'admin') {
-            throw new Error('Your account is pending approval');
+          const result = await User.authenticate(credentials.username, credentials.password);
+          
+          if (!result) {
+            throw new Error('Invalid username or password');
           }
 
           return {
-            id: user.id.toString(),
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            is_approved: user.is_approved
+            id: result.id.toString(),
+            username: result.username,
+            name: result.name,
+            role: result.role
           };
         } catch (error) {
           throw new Error(error.message);
@@ -48,20 +39,20 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
+        token.username = user.username;
         token.name = user.name;
         token.role = user.role;
-        token.is_approved = user.is_approved;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name;
-        session.user.role = token.role;
-        session.user.is_approved = token.is_approved;
+        session.user = {
+          id: token.id,
+          username: token.username,
+          name: token.name,
+          role: token.role
+        };
       }
       return session;
     }

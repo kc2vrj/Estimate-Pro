@@ -4,7 +4,8 @@ const path = require('path');
 
 class User {
   static async initialize() {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     
     // First check if table exists
     const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
@@ -57,21 +58,24 @@ class User {
   }
 
   static async findByEmail(email) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     db.close();
     return user;
   }
 
   static async findById(id) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     db.close();
     return user;
   }
 
   static async create({ email, password, name }) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
       const result = db.prepare(
@@ -90,14 +94,16 @@ class User {
   }
 
   static async getAllPendingUsers() {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     const users = db.prepare('SELECT id, email, name, created_at FROM users WHERE is_approved = 0 AND role = ?').all('user');
     db.close();
     return users;
   }
 
   static async approveUser(userId) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     try {
       const result = db.prepare('UPDATE users SET is_approved = 1 WHERE id = ? AND role = ?').run(userId, 'user');
       if (result.changes === 0) {
@@ -112,7 +118,8 @@ class User {
   }
 
   static async denyUser(userId) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     try {
       const result = db.prepare('DELETE FROM users WHERE id = ? AND role = ? AND is_approved = 0').run(userId, 'user');
       if (result.changes === 0) {
@@ -127,14 +134,16 @@ class User {
   }
 
   static async getAllUsers() {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     const users = db.prepare('SELECT id, email, name, role, is_approved, created_at FROM users').all();
     db.close();
     return users;
   }
 
   static async updateUser(userId, { name, email, role, is_approved }) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     try {
       // Don't allow changing admin's role or approval status
       const user = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
@@ -160,7 +169,8 @@ class User {
   }
 
   static async deleteUser(userId) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     try {
       // Check if this is an admin user
       const user = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
@@ -185,7 +195,8 @@ class User {
   }
 
   static async setUserRole(userId, role) {
-    const db = sqlite3(path.join(process.cwd(), 'database.sqlite'));
+    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const db = sqlite3(dbPath);
     try {
       // Don't allow changing admin's role
       const user = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);

@@ -20,11 +20,8 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Create data directory
-RUN mkdir -p data
-
-# Initialize the database
-RUN node scripts/init-db.js
+# Make the startup script executable
+RUN chmod +x scripts/start.sh
 
 # Build the Next.js application
 RUN npm run build
@@ -32,5 +29,5 @@ RUN npm run build
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Start the application with the new port
-CMD ["sh", "-c", "npm start -- -p 3000"]
+# Start the application using the startup script
+CMD ["./scripts/start.sh"]

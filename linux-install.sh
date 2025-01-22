@@ -10,7 +10,7 @@ check_installation() {
     if systemctl is-active --quiet estimate-pro; then
         echo "Estimate Pro service is running"
         return 0
-    elif systemctl is-enabled --quiet estimate-pro; then
+    elif systemctl is-enabled --quiet estimate-pro 2>/dev/null; then
         echo "Estimate Pro service is installed but not running"
         return 1
     else
@@ -172,13 +172,15 @@ EOL
 APP_DIR="/opt/estimate-pro"
 
 # Check if already installed
-installation_status=$(check_installation; echo $?)
+check_installation
+INSTALL_STATUS=$?
 
-if [ "$installation_status" -eq 0 ] || [ "$installation_status" -eq 1 ]; then
+if [ "$INSTALL_STATUS" -eq 0 ] || [ "$INSTALL_STATUS" -eq 1 ]; then
     echo "Existing installation detected"
-    read -p "Would you like to update? (y/n) " -n 1 -r
+    printf "Would you like to update? (y/N) "
+    read -r REPLY
     echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
         update_installation
         echo "Update complete!"
         echo "You can check the status with: systemctl status estimate-pro"

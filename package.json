@@ -1,0 +1,24 @@
+{
+  "name": "estimate-pro",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "A modern, professional estimate generation system built with Next.js. Features dynamic line items, automatic markup calculations, and PDF export capabilities.",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "next build",
+    "start": "set NODE_ENV=production&& node server.js",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.473.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1"
+  }
+}

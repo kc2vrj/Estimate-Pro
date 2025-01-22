@@ -5,7 +5,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/estimates');
+    router.replace('/estimates');
   }, []);
 
   return null;

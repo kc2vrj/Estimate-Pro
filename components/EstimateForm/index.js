@@ -1,10 +1,12 @@
 // components/EstimateForm/index.js
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, MinusCircle, Download } from 'lucide-react';
+import { PlusCircle, MinusCircle, Download, Save } from 'lucide-react';
+import { useRouter } from 'next/router';
 
-const EstimateForm = () => {
+const EstimateForm = ({ initialData = null, readOnly = false, isEditing = false }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     number: '',
     po: '',
     salesRep: '',
@@ -17,12 +19,22 @@ const EstimateForm = () => {
   const [rows, setRows] = useState([
     { id: 1, quantity: '', description: '', cost: '', price: '', total: '' }
   ]);
-  
+
   const [totals, setTotals] = useState({
     subtotal: 0,
     salesTax: 0,
     total: 0
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+      setRows(initialData.rows || []);
+      if (initialData.totals) {
+        setTotals(initialData.totals);
+      }
+    }
+  }, [initialData]);
 
   const generatePDF = () => {
     window.print();
@@ -62,12 +74,12 @@ const EstimateForm = () => {
     const updatedRows = rows.map(row => {
       if (row.id === id) {
         const updatedRow = { ...row, [field]: value };
-        
+
         // If cost is updated, automatically calculate price
         if (field === 'cost') {
           updatedRow.price = calculatePrice(value);
         }
-        
+
         // Calculate total if we have both quantity and price
         if (field === 'quantity' || field === 'price' || field === 'cost') {
           const quantity = Number(updatedRow.quantity);
@@ -97,6 +109,38 @@ const EstimateForm = () => {
     });
   };
 
+  const saveEstimate = async () => {
+    try {
+      const estimateData = {
+        ...formData,
+        rows,
+        totals,
+      };
+
+      const url = isEditing ? `/api/estimates?id=${initialData.id}` : '/api/estimates';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(estimateData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save estimate');
+      }
+
+      const result = await response.json();
+      alert(isEditing ? 'Estimate updated successfully!' : 'Estimate saved successfully!');
+      router.push('/estimates');
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      alert('Error saving estimate. Please try again.');
+    }
+  };
+
   // Auto-resize textarea function
   const autoResizeTextArea = (element) => {
     if (element) {
@@ -121,14 +165,23 @@ const EstimateForm = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto p-6 print:p-2 bg-white">
-      {/* Print Button */}
-      <div className="print:hidden mb-4">
+      {/* Print and Save Buttons */}
+      <div className="flex justify-end gap-4 mb-6 print:hidden">
+        {!readOnly && (
+          <button
+            onClick={saveEstimate}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            <Save size={20} />
+            {isEditing ? 'Update' : 'Save'}
+          </button>
+        )}
         <button
           onClick={generatePDF}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           <Download size={20} />
-          Save as PDF
+          {readOnly ? 'Print' : 'Save as PDF'}
         </button>
       </div>
 
@@ -156,10 +209,11 @@ const EstimateForm = () => {
             <div className="flex items-center">
               <label className="w-24">Date:</label>
               <input
-                type="text"
+                type="date"
                 className="flex-1 p-1 border rounded print:border-none"
                 value={formData.date}
                 onChange={(e) => updateFormData('date', e.target.value)}
+                readOnly={readOnly}
               />
             </div>
             <div className="flex items-center">
@@ -169,6 +223,7 @@ const EstimateForm = () => {
                 className="flex-1 p-1 border rounded print:border-none"
                 value={formData.number}
                 onChange={(e) => updateFormData('number', e.target.value)}
+                readOnly={readOnly}
               />
             </div>
             <div className="flex items-center">
@@ -178,6 +233,7 @@ const EstimateForm = () => {
                 className="flex-1 p-1 border rounded print:border-none"
                 value={formData.po}
                 onChange={(e) => updateFormData('po', e.target.value)}
+                readOnly={readOnly}
               />
             </div>
             <div className="flex items-center">
@@ -187,6 +243,7 @@ const EstimateForm = () => {
                 className="flex-1 p-1 border rounded print:border-none"
                 value={formData.salesRep}
                 onChange={(e) => updateFormData('salesRep', e.target.value)}
+                readOnly={readOnly}
               />
             </div>
           </div>
@@ -201,6 +258,7 @@ const EstimateForm = () => {
             className="w-full p-2 border rounded print:h-auto"
             value={formData.billToAddress}
             onChange={(e) => handleTextAreaChange('billToAddress', e.target.value, e)}
+            readOnly={readOnly}
           />
         </div>
         <div className="w-1/2">
@@ -209,6 +267,7 @@ const EstimateForm = () => {
             className="w-full p-2 border rounded print:h-auto"
             value={formData.workShipAddress}
             onChange={(e) => handleTextAreaChange('workShipAddress', e.target.value, e)}
+            readOnly={readOnly}
           />
         </div>
       </div>
@@ -221,6 +280,7 @@ const EstimateForm = () => {
             className="w-full p-2 border rounded print:h-auto"
             value={formData.scopeOfWork}
             onChange={(e) => handleTextAreaChange('scopeOfWork', e.target.value, e)}
+            readOnly={readOnly}
           />
         </div>
         <div>
@@ -229,6 +289,7 @@ const EstimateForm = () => {
             className="w-full p-2 border rounded print:h-auto"
             value={formData.exclusions}
             onChange={(e) => handleTextAreaChange('exclusions', e.target.value, e)}
+            readOnly={readOnly}
           />
         </div>
       </div>
@@ -255,6 +316,7 @@ const EstimateForm = () => {
                     className="w-full p-1 border rounded print:border"
                     value={row.quantity}
                     onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
+                    readOnly={readOnly}
                   />
                 </td>
                 <td className="p-2 print:p-1 border description-col">
@@ -263,6 +325,7 @@ const EstimateForm = () => {
                     className="w-full p-1 border rounded print:border"
                     value={row.description}
                     onChange={(e) => updateRow(row.id, 'description', e.target.value)}
+                    readOnly={readOnly}
                   />
                 </td>
                 <td className="p-2 print:p-1 border print:hidden">
@@ -272,6 +335,7 @@ const EstimateForm = () => {
                     value={row.cost}
                     onChange={(e) => updateRow(row.id, 'cost', e.target.value)}
                     placeholder="Our Cost"
+                    readOnly={readOnly}
                   />
                 </td>
                 <td className="p-2 print:p-1 border price-col">
@@ -280,6 +344,7 @@ const EstimateForm = () => {
                     className="w-full p-1 border rounded print:border"
                     value={row.price}
                     onChange={(e) => updateRow(row.id, 'price', e.target.value)}
+                    readOnly={readOnly}
                   />
                 </td>
                 <td className="p-2 print:p-1 border total-col">
@@ -291,12 +356,14 @@ const EstimateForm = () => {
                   />
                 </td>
                 <td className="p-2 print:hidden">
-                  <button
-                    onClick={() => removeRow(row.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <MinusCircle size={20} />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => removeRow(row.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <MinusCircle size={20} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -305,13 +372,15 @@ const EstimateForm = () => {
 
         {/* Add Row Button */}
         <div className="print:hidden">
-          <button
-            onClick={addRow}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-          >
-            <PlusCircle size={20} />
-            Add Row
-          </button>
+          {!readOnly && (
+            <button
+              onClick={addRow}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+            >
+              <PlusCircle size={20} />
+              Add Row
+            </button>
+          )}
         </div>
 
         {/* Totals */}

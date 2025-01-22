@@ -14,7 +14,8 @@ fi
 
 APP_DIR="/opt/estimate-pro"
 SERVICE_FILE="/etc/systemd/system/estimate-pro.service"
-LOG_FILES=("/var/log/estimate-pro.log" "/var/log/estimate-pro.error.log")
+LOG_FILE="/var/log/estimate-pro.log"
+ERROR_LOG_FILE="/var/log/estimate-pro.error.log"
 LOGROTATE_FILE="/etc/logrotate.d/estimate-pro"
 
 # Function to backup data
@@ -33,11 +34,12 @@ backup_data() {
     
     # Backup logs if they exist
     echo "Backing up logs..."
-    for log_file in "${LOG_FILES[@]}"; do
-        if [ -f "$log_file" ]; then
-            cp "$log_file" "$backup_dir/"
-        fi
-    done
+    if [ -f "$LOG_FILE" ]; then
+        cp "$LOG_FILE" "$backup_dir/"
+    fi
+    if [ -f "$ERROR_LOG_FILE" ]; then
+        cp "$ERROR_LOG_FILE" "$backup_dir/"
+    fi
     
     echo "Backup completed at $backup_dir"
     return 0
@@ -62,11 +64,12 @@ remove_service() {
     fi
     
     # Remove log files
-    for log_file in "${LOG_FILES[@]}"; do
-        if [ -f "$log_file" ]; then
-            rm -f "$log_file"
-        fi
-    done
+    if [ -f "$LOG_FILE" ]; then
+        rm -f "$LOG_FILE"
+    fi
+    if [ -f "$ERROR_LOG_FILE" ]; then
+        rm -f "$ERROR_LOG_FILE"
+    fi
     
     # Remove logrotate configuration
     if [ -f "$LOGROTATE_FILE" ]; then
@@ -91,9 +94,9 @@ remove_application() {
 remove_user() {
     echo "Removing application user..."
     
-    if id -u estimatepro &>/dev/null; then
-        pkill -u estimatepro || true  # Kill any running processes
-        userdel -r estimatepro 2>/dev/null || true
+    if id -u estimatepro >/dev/null 2>&1; then
+        pkill -u estimatepro >/dev/null 2>&1 || true  # Kill any running processes
+        userdel -r estimatepro >/dev/null 2>&1 || true
     fi
     
     return 0
@@ -105,25 +108,28 @@ echo "WARNING: This action cannot be undone!"
 echo
 
 # Ask about backup
-read -p "Would you like to backup your data before uninstalling? (y/N) " -n 1 -r
+printf "Would you like to backup your data before uninstalling? (y/N) "
+read -r REPLY
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
     backup_data
 fi
 
 # Ask for confirmation
-read -p "Are you sure you want to uninstall Estimate Pro? (y/N) " -n 1 -r
+printf "Are you sure you want to uninstall Estimate Pro? (y/N) "
+read -r REPLY
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [ "$REPLY" != "y" ] && [ "$REPLY" != "Y" ]; then
     echo "Uninstall cancelled"
     exit 0
 fi
 
 # Ask about data removal
-read -p "Would you like to remove all data including the database? (y/N) " -n 1 -r
+printf "Would you like to remove all data including the database? (y/N) "
+read -r REPLY
 echo
 REMOVE_DATA=false
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
     REMOVE_DATA=true
 fi
 

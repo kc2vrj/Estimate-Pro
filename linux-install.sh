@@ -5,9 +5,15 @@ set -ex
 
 echo "Checking Estimate-Pro installation..."
 
+# Check if running as root
+if [ "$(id -u)" != "0" ]; then 
+    echo "Please run as root (use sudo)"
+    exit 1
+fi
+
 # Function to check if service is installed and running
 check_installation() {
-    if systemctl is-active --quiet estimate-pro; then
+    if systemctl is-active --quiet estimate-pro 2>/dev/null; then
         echo "Estimate Pro service is running"
         return 0
     elif systemctl is-enabled --quiet estimate-pro 2>/dev/null; then

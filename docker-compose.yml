@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./database.sqlite:/app/database.sqlite
+      - ./estimates.db:/app/estimates.db
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

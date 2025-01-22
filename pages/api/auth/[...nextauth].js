@@ -12,11 +12,17 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
-          console.log('NextAuth authorize called with email:', credentials.email);
-          console.log('NextAuth received password length:', credentials.password?.length);
+          console.log('Raw credentials:', credentials);
+          console.log('NextAuth authorize called with email:', credentials?.email);
+          console.log('NextAuth received password length:', credentials?.password?.length);
           
+          if (!credentials?.email || !credentials?.password) {
+            console.log('Missing credentials');
+            throw new Error('Email and password are required');
+          }
+
           const result = await User.authenticate(credentials.email, credentials.password);
           console.log('Authentication result:', result ? 'Success' : 'Failed');
           

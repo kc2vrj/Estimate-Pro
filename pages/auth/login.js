@@ -29,12 +29,22 @@ export default function Login() {
     const email = formData.get('email');
     const password = formData.get('password');
 
+    console.log('Form data:', {
+      email: email,
+      passwordLength: password?.length
+    });
+
     try {
-      console.log('Attempting login with:', email);
+      console.log('Calling signIn with:', {
+        email: email,
+        passwordLength: password?.length
+      });
+      
       const result = await signIn('credentials', {
         redirect: false,
-        email,
-        password
+        email: email,
+        password: password,
+        callbackUrl: '/estimates'
       });
 
       console.log('Login result:', result);

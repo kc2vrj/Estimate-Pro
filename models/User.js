@@ -93,6 +93,24 @@ class User {
     return bcrypt.compare(password, user.password);
   }
 
+  static async authenticate(email, password) {
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return null;
+    }
+    
+    const isValid = await User.validatePassword(user, password);
+    if (!isValid) {
+      return null;
+    }
+
+    if (!user.is_approved) {
+      throw new Error('Account is pending approval');
+    }
+
+    return user;
+  }
+
   static async getAllPendingUsers() {
     const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
     const db = sqlite3(dbPath);

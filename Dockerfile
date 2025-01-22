@@ -24,7 +24,7 @@ COPY . .
 RUN npm run build
 
 # Expose the port the app runs on
-EXPOSE 8080
+EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application with the new port
+CMD ["sh", "-c", "npm start -- -p 3000"]

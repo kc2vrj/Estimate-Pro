@@ -18,13 +18,8 @@ export default function EstimatesList() {
       return;
     }
 
-    if (!session.user.is_approved && session.user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
     fetchEstimates();
-  }, [session, status]);
+  }, [session, status, router]);
 
   const fetchEstimates = async () => {
     try {

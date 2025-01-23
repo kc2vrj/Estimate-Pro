@@ -19,7 +19,20 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'POST') {
+    try {
+      const quote = await Quote.create({
+        ...req.body,
+        user_id: session.user.id
+      });
+      return res.status(201).json(quote);
+    } catch (error) {
+      console.error('Error creating quote:', error);
+      return res.status(500).json({ error: 'Error creating quote' });
+    }
+  }
+
   // Handle other methods
-  res.setHeader('Allow', ['GET']);
+  res.setHeader('Allow', ['GET', 'POST']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }

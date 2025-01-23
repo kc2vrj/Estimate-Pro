@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -139,100 +138,6 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
-
-  const handleExportPDF = async () => {
-    try {
-      // Only import html2pdf on the client side
-      const html2pdf = (await import('html2pdf.js')).default;
-      
-      const element = formRef.current;
-      
-      // Hide the buttons during PDF generation
-      const buttons = element.querySelectorAll('.no-print');
-      buttons.forEach(button => button.style.display = 'none');
-
-      // Calculate scaling
-      const contentWidth = element.scrollWidth;
-      const contentHeight = element.scrollHeight;
-      const pageWidth = 8.5; // inches
-      const pageHeight = 11; // inches
-      const margin = 0.5; // inches
-      const availableWidth = pageWidth - (2 * margin);
-      const availableHeight = pageHeight - (2 * margin);
-      const scale = Math.min(
-        availableWidth / (contentWidth / 96), // 96 DPI to convert px to inches
-        availableHeight / (contentHeight / 96)
-      );
-
-      const opt = {
-        margin: margin,
-        filename: `estimate-${formData.number || 'new'}.pdf`,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { 
-          scale: scale * 2, // Double scale for better quality
-          useCORS: true,
-          letterRendering: true,
-          scrollY: 0,
-          width: contentWidth,
-          height: contentHeight,
-          removeContainer: true
-        },
-        jsPDF: { 
-          unit: 'in', 
-          format: 'letter', 
-          orientation: 'portrait',
-          compress: true
-        }
-      };
-
-      // Generate PDF and show save dialog
-      const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
-      
-      // Use showSaveFilePicker if available (modern browsers)
-      if ('showSaveFilePicker' in window) {
-        try {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: `estimate-${formData.number || 'new'}.pdf`,
-            types: [{
-              description: 'PDF Document',
-              accept: { 'application/pdf': ['.pdf'] }
-            }]
-          });
-          const writable = await handle.createWritable();
-          await writable.write(pdfBlob);
-          await writable.close();
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            // Fallback to traditional method if user didn't just cancel
-            const url = URL.createObjectURL(pdfBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `estimate-${formData.number || 'new'}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }
-        }
-      } else {
-        // Fallback for older browsers
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `estimate-${formData.number || 'new'}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      // Show the buttons again after PDF is generated
-      const buttons = formRef.current.querySelectorAll('.no-print');
-      buttons.forEach(button => button.style.display = '');
-    }
-  };
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="w-full bg-white">
@@ -452,18 +357,9 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
           )}
           <button 
             type="button"
-            onClick={handleExportPDF}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ml-auto"
-          >
-            <Download className="w-4 h-4" />
-            Export PDF
-          </button>
-          <button 
-            type="button"
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ml-auto"
           >
-            <Download className="w-4 h-4" />
             Print
           </button>
         </div>

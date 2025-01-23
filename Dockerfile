@@ -1,7 +1,9 @@
 # Build stage
 FROM node:20-slim AS builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y gpg wget && \
+    wget --no-check-certificate -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
@@ -19,7 +21,9 @@ RUN npm run build
 # Production stage
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y gpg wget && \
+    wget --no-check-certificate -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

@@ -8,21 +8,34 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const formRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    date: initialData?.date || new Date().toLocaleDateString(),
-    number: initialData?.number || '',
-    po: initialData?.po || '',
-    salesRep: initialData?.salesRep || session?.user?.name || 'Paul M. Nannery',
-    billToAddress: initialData?.billToAddress || '',
-    workShipAddress: initialData?.workShipAddress || '',
-    scopeOfWork: initialData?.scopeOfWork || '',
-    exclusions: initialData?.exclusions || 'M-F 8-5 Any item not on quote',
-    salesTax: 0
+    date: new Date().toISOString().split('T')[0],
+    number: '',
+    po: '',
+    salesRep: session?.user?.name || 'Paul M. Nannery',
+    billToAddress: '',
+    workShipAddress: '',
+    scopeOfWork: '',
+    exclusions: 'M-F 8-5 Any item not on quote',
+    salesTax: 0,
+    ...(initialData || {})
   });
 
   const [items, setItems] = useState(initialData?.items || []);
+
+  useEffect(() => {
+    // Clear messages after 3 seconds
+    if (message || error) {
+      const timer = setTimeout(() => {
+        setMessage('');
+        setError('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, error]);
 
   const handleInputChange = (e) => {
     if (readOnly) return;
@@ -48,7 +61,16 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
 
   const addItem = () => {
     if (readOnly) return;
-    setItems([...items, { id: Date.now(), quantity: 1, description: '', price: 0, total: 0 }]);
+    setItems([
+      ...items,
+      {
+        id: Date.now(),
+        quantity: 1,
+        description: '',
+        price: 0,
+        total: 0
+      }
+    ]);
   };
 
   const removeItem = (index) => {
@@ -56,20 +78,30 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const calculateItemTotal = (item) => {
+    return item.quantity * item.price;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (readOnly) return;
+    if (loading) return;
 
     try {
       setLoading(true);
       setError('');
-
-      if (onSubmit) {
-        onSubmit({ ...formData, items });
-      }
+      setMessage('');
+      
+      await onSubmit({
+        ...formData,
+        items: items.map(item => ({
+          ...item,
+          total: calculateItemTotal(item)
+        }))
+      });
+      setMessage('Estimate saved successfully');
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setError(error.message || 'Error submitting form');
+      console.error('Error saving estimate:', error);
+      setError('Failed to save estimate');
     } finally {
       setLoading(false);
     }
@@ -142,6 +174,16 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="w-full bg-white">
       <div className="container mx-auto px-8 pt-0">
+        {message && (
+          <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">
+            {message}
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
         {/* Header Section */}
         <div className="flex justify-between mb-8">
           <div className="flex gap-4">

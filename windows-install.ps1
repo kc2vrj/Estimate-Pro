@@ -205,7 +205,7 @@ svc.install();
         
         # Install and start the service
         Write-Host "Installing Windows service..."
-        cd $AppDir
+        Set-Location $AppDir
         node install-service.js
     }
 

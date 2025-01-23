@@ -7,7 +7,6 @@ import { Textarea } from './ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { Label } from './ui/label';
 import { MapPin, Clock, Calendar, Building2, FileText } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 const TimesheetForm = ({ initialData = null, onSubmit, onCancel }) => {
   const { data: session } = useSession();
@@ -32,7 +31,7 @@ const TimesheetForm = ({ initialData = null, onSubmit, onCancel }) => {
 
   useEffect(() => {
     if (error) {
-      toast.error(error);
+      // Removed toast.error(error);
     }
   }, [error]);
 
@@ -79,16 +78,16 @@ const TimesheetForm = ({ initialData = null, onSubmit, onCancel }) => {
         [field]: locationData.address
       }));
 
-      toast.success('Location recorded successfully');
+      // Removed toast.success('Location recorded successfully');
     } catch (err) {
-      toast.error(`Failed to get location: ${err.message}`);
+      // Removed toast.error(`Failed to get location: ${err.message}`);
     }
   };
 
   const calculateTotalHours = () => {
     if (formData.time_in && formData.time_out) {
-      const timeIn = new Date(\`${formData.date} ${formData.time_in}\`);
-      const timeOut = new Date(\`${formData.date} ${formData.time_out}\`);
+      const timeIn = new Date(`${formData.date}T${formData.time_in}`);
+      const timeOut = new Date(`${formData.date}T${formData.time_out}`);
       const diff = (timeOut - timeIn) / (1000 * 60 * 60); // Convert to hours
       return Math.round(diff * 100) / 100; // Round to 2 decimal places
     }
@@ -110,7 +109,7 @@ const TimesheetForm = ({ initialData = null, onSubmit, onCancel }) => {
         await saveTimesheetEntry(entry);
       }
 
-      toast.success(initialData ? 'Timesheet updated successfully' : 'Timesheet entry saved successfully');
+      // Removed toast.success(initialData ? 'Timesheet updated successfully' : 'Timesheet entry saved successfully');
       
       if (onSubmit) {
         onSubmit();
@@ -134,7 +133,7 @@ const TimesheetForm = ({ initialData = null, onSubmit, onCancel }) => {
         });
       }
     } catch (err) {
-      toast.error(err.message);
+      // Removed toast.error(err.message);
     }
   };
 

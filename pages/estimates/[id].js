@@ -54,7 +54,6 @@ export default function ViewEstimatePage() {
       const updatedEstimate = await response.json();
       setEstimate(updatedEstimate);
       setIsEditing(false);
-      router.push(`/estimates/${id}`);
     } catch (err) {
       setError(err.message);
     } finally {

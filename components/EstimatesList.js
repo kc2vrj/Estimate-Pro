@@ -39,6 +39,38 @@ export default function EstimatesList() {
     }
   };
 
+  const handleDelete = async (id, e) => {
+    e.preventDefault(); // Prevent the link click
+    if (!confirm('Are you sure you want to delete this estimate?')) {
+      return;
+    }
+
+    setError(null);
+    try {
+      const response = await fetch(`/api/estimates/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete estimate');
+      }
+      
+      // Remove the estimate from the local state instead of refetching
+      setEstimates(prevEstimates => prevEstimates.filter(est => est.id !== id));
+    } catch (err) {
+      console.error('Error deleting estimate:', err);
+      setError(err.message);
+      // Show error message to user
+      alert('Error deleting estimate: ' + err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -86,10 +118,16 @@ export default function EstimatesList() {
                             {estimate.number || `Estimate #${estimate.id}`}
                           </p>
                         </div>
-                        <div className="ml-2 flex-shrink-0 flex">
+                        <div className="ml-2 flex-shrink-0 flex space-x-2">
                           <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            ${estimate.total.toFixed(2)}
+                            ${(estimate.total_amount || 0).toFixed(2)}
                           </p>
+                          <button
+                            onClick={(e) => handleDelete(estimate.id, e)}
+                            className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 hover:bg-red-200"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                       <div className="mt-2 sm:flex sm:justify-between">

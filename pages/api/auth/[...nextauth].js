@@ -2,28 +2,32 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import User from '../../../models/User';
 
+// Initialize user model
+User.initialize().catch(console.error);
+
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET || 'your-secret-key',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         try {
-          const result = await User.authenticate(credentials.username, credentials.password);
+          const result = await User.authenticate(credentials.email, credentials.password);
           
           if (!result) {
-            throw new Error('Invalid username or password');
+            throw new Error('Invalid email or password');
           }
 
           return {
             id: result.id.toString(),
-            username: result.username,
+            email: result.email,
             name: result.name,
-            role: result.role
+            role: result.role,
+            is_approved: result.is_approved
           };
         } catch (error) {
           throw new Error(error.message);
@@ -39,9 +43,10 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.username = user.username;
+        token.email = user.email;
         token.name = user.name;
         token.role = user.role;
+        token.is_approved = user.is_approved;
       }
       return token;
     },
@@ -49,9 +54,10 @@ export const authOptions = {
       if (token) {
         session.user = {
           id: token.id,
-          username: token.username,
+          email: token.email,
           name: token.name,
-          role: token.role
+          role: token.role,
+          is_approved: token.is_approved
         };
       }
       return session;

@@ -54,7 +54,11 @@ export default async function handler(req, res) {
 
       case 'DELETE':
         try {
-          await db.deleteEstimate(id);
+          console.log('Deleting estimate:', id);
+          const result = await db.deleteEstimate(id);
+          if (!result || result.changes === 0) {
+            return res.status(404).json({ message: 'Estimate not found' });
+          }
           res.status(200).json({ message: 'Estimate deleted successfully' });
         } catch (error) {
           console.error('Error deleting estimate:', error);

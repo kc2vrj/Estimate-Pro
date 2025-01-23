@@ -1,9 +1,27 @@
 import EstimateForm from '../../components/EstimateForm';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 
 export default function NewEstimatePage() {
   const router = useRouter();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push('/auth/login');
+    },
+  });
+
+  console.log('New Estimate Page - Session:', session);
+  console.log('New Estimate Page - Status:', status);
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <div>

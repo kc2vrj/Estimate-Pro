@@ -1,7 +1,28 @@
-const db = require('../lib/db');
+const path = require('path');
+const Database = require('better-sqlite3');
+const fs = require('fs');
+
+let db;
+
+function getDb() {
+  if (!db) {
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    const dbPath = path.join(dataDir, 'estimates.db');
+    db = new Database(dbPath);
+
+    // Enable foreign keys
+    db.pragma('foreign_keys = ON');
+  }
+  return db;
+}
 
 class Quote {
   static initialize() {
+    const db = getDb();
     const stmt = db.prepare(`
       CREATE TABLE IF NOT EXISTS quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +41,7 @@ class Quote {
   }
 
   static create(data) {
+    const db = getDb();
     const stmt = db.prepare(`
       INSERT INTO quotes (
         customer_name,
@@ -39,9 +61,9 @@ class Quote {
       data.customer_email,
       data.customer_phone,
       data.description,
-      JSON.stringify(data.items),
+      JSON.stringify(data.items || []),
       data.total_amount,
-      data.status,
+      data.status || 'pending',
       data.user_id
     );
 
@@ -49,6 +71,7 @@ class Quote {
   }
 
   static findAll() {
+    const db = getDb();
     const stmt = db.prepare('SELECT * FROM quotes ORDER BY created_at DESC');
     const quotes = stmt.all();
     return quotes.map(quote => ({
@@ -58,6 +81,7 @@ class Quote {
   }
 
   static findById(id) {
+    const db = getDb();
     const stmt = db.prepare('SELECT * FROM quotes WHERE id = ?');
     const quote = stmt.get(id);
     if (!quote) return null;
@@ -68,6 +92,7 @@ class Quote {
   }
 
   static update(id, data) {
+    const db = getDb();
     const stmt = db.prepare(`
       UPDATE quotes
       SET customer_name = ?,
@@ -85,7 +110,7 @@ class Quote {
       data.customer_email,
       data.customer_phone,
       data.description,
-      JSON.stringify(data.items),
+      JSON.stringify(data.items || []),
       data.total_amount,
       data.status,
       id
@@ -95,6 +120,7 @@ class Quote {
   }
 
   static delete(id) {
+    const db = getDb();
     const stmt = db.prepare('DELETE FROM quotes WHERE id = ?');
     return stmt.run(id);
   }

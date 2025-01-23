@@ -12,11 +12,7 @@ export default function Login() {
   useEffect(() => {
     if (session?.user) {
       console.log('Session found:', session);
-      if (session.user.is_approved || session.user.role === 'admin') {
-        router.push('/estimates');
-      } else {
-        router.push('/');
-      }
+      router.push('/estimates').catch(console.error);
     }
   }, [session, router]);
 
@@ -26,21 +22,38 @@ export default function Login() {
     setLoading(true);
 
     const formData = new FormData(e.target);
-    const username = formData.get('username');
+    const email = formData.get('email');
     const password = formData.get('password');
 
+    console.log('Form data:', {
+      email: email,
+      passwordLength: password?.length
+    });
+
     try {
-      console.log('Attempting login with:', username);
+      console.log('Calling signIn with:', {
+        email: email,
+        passwordLength: password?.length
+      });
+      
       const result = await signIn('credentials', {
         redirect: false,
-        username,
-        password
+        email: email,
+        password: password,
+        callbackUrl: '/estimates'
       });
 
       console.log('Login result:', result);
 
-      if (result.error) {
+      if (result?.error) {
         throw new Error(result.error);
+      }
+
+      // Force redirect on successful login
+      if (result?.ok) {
+        console.log('Login successful, redirecting to /estimates');
+        router.push('/estimates');
+        return;
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -76,17 +89,17 @@ export default function Login() {
           <input type="hidden" name="remember" value="true" />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
+              <label htmlFor="email" className="sr-only">
+                Email
               </label>
               <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
+                placeholder="Email address"
               />
             </div>
             <div>

@@ -4,13 +4,17 @@ const path = require('path');
 
 class User {
   static async initialize() {
+    console.log('Starting database initialization...');
     const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    console.log('Database path:', dbPath);
     const db = sqlite3(dbPath);
     
     // First check if table exists
     const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+    console.log('Table exists:', !!tableExists);
     
     if (!tableExists) {
+      console.log('Creating users table...');
       // Create new table with all columns
       db.exec(`
         CREATE TABLE users (
@@ -23,6 +27,7 @@ class User {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      console.log('Users table created successfully');
     } else {
       // Add new columns if they don't exist
       const columns = db.prepare("PRAGMA table_info(users)").all();
@@ -41,12 +46,21 @@ class User {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     
     const admin = db.prepare('SELECT * FROM users WHERE email = ?').get(adminEmail);
+    console.log('Existing admin:', admin ? 'Found' : 'Not found');
+    
     if (!admin) {
+      console.log('Creating admin user...');
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      console.log('Generated hash length:', hashedPassword.length);
+      
+      // Verify the hash works
+      const verifyHash = await bcrypt.compare(adminPassword, hashedPassword);
+      console.log('Verified hash works:', verifyHash);
+      
       db.prepare(
         'INSERT INTO users (email, password, name, role, is_approved) VALUES (?, ?, ?, ?, ?)'
       ).run(adminEmail, hashedPassword, 'Admin', 'admin', 1);
-      console.log('Admin user created');
+      console.log('Admin user created successfully');
     } else {
       // Ensure existing admin has correct role and approval
       db.prepare(
@@ -90,7 +104,39 @@ class User {
   }
 
   static async validatePassword(user, password) {
-    return bcrypt.compare(password, user.password);
+    console.log('Validating password for user:', user.email);
+    console.log('Stored password hash length:', user.password.length);
+    console.log('Input password length:', password.length);
+    const isValid = await bcrypt.compare(password, user.password);
+    console.log('Password validation result:', isValid);
+    return isValid;
+  }
+
+  static async authenticate(email, password) {
+    console.log('Attempting authentication for email:', email);
+    const user = await User.findByEmail(email);
+    console.log('User found:', !!user);
+    
+    if (!user) {
+      console.log('User not found');
+      return null;
+    }
+    
+    const isValid = await User.validatePassword(user, password);
+    console.log('Password valid:', isValid);
+    
+    if (!isValid) {
+      console.log('Invalid password');
+      return null;
+    }
+
+    if (!user.is_approved) {
+      console.log('User not approved');
+      throw new Error('Account is pending approval');
+    }
+
+    console.log('Authentication successful');
+    return user;
   }
 
   static async getAllPendingUsers() {

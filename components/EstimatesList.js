@@ -18,13 +18,8 @@ export default function EstimatesList() {
       return;
     }
 
-    if (!session.user.is_approved && session.user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
     fetchEstimates();
-  }, [session, status]);
+  }, [session, status, router]);
 
   const fetchEstimates = async () => {
     try {
@@ -54,20 +49,15 @@ export default function EstimatesList() {
         },
         credentials: 'include'
       });
-      
-      const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete estimate');
+        throw new Error('Failed to delete estimate');
       }
-      
-      // Remove the estimate from the local state instead of refetching
-      setEstimates(prevEstimates => prevEstimates.filter(est => est.id !== id));
+
+      // Remove the estimate from the list
+      setEstimates(estimates.filter(est => est.id !== id));
     } catch (err) {
-      console.error('Error deleting estimate:', err);
       setError(err.message);
-      // Show error message to user
-      alert('Error deleting estimate: ' + err.message);
     }
   };
 
@@ -82,76 +72,82 @@ export default function EstimatesList() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Estimates</h1>
-          <Link
-            href="/estimates/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            New Estimate
-          </Link>
-        </div>
-
-        {estimates.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No estimates</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new estimate.</p>
+      <div className="px-4 sm:px-0">
+        <div className="sm:flex sm:items-center">
+          <div className="sm:flex-auto">
+            <h1 className="text-xl font-semibold text-gray-900">Estimates</h1>
+            <p className="mt-2 text-sm text-gray-700">
+              A list of all estimates created by you.
+            </p>
           </div>
-        ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {estimates.map((estimate) => (
-                <li key={estimate.id}>
-                  <Link href={`/estimates/${estimate.id}`} className="block hover:bg-gray-50">
-                    <div className="px-4 py-4 sm:px-6">
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <Link
+              href="/estimates/new"
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+            >
+              Add Estimate
+            </Link>
+          </div>
+        </div>
+        <div className="mt-8 flex flex-col">
+          <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <div className="divide-y divide-gray-200 bg-white">
+                  {estimates.map((estimate) => (
+                    <div key={estimate.id} className="p-4 sm:px-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <p className="text-sm font-medium text-indigo-600 truncate">
-                            {estimate.number || `Estimate #${estimate.id}`}
-                          </p>
+                        <div className="truncate">
+                          <div className="flex">
+                            <p className="truncate text-sm font-medium text-indigo-600">
+                              <Link
+                                href={`/estimates/${estimate.id}`}
+                                className="hover:underline"
+                              >
+                                Estimate #{estimate.number}
+                              </Link>
+                            </p>
+                          </div>
+                          <div className="mt-2 flex">
+                            <div className="flex items-center text-sm text-gray-500">
+                              <p>Created on {new Date(estimate.date).toLocaleDateString()}</p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="ml-2 flex-shrink-0 flex space-x-2">
+                        <div className="ml-2 flex-shrink-0 flex items-center space-x-4">
                           <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             ${(estimate.total_amount || 0).toFixed(2)}
                           </p>
-                          <button
-                            onClick={(e) => handleDelete(estimate.id, e)}
-                            className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 hover:bg-red-200"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            {estimate.date}
-                          </p>
-                          {estimate.po && (
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              PO: {estimate.po}
-                            </p>
-                          )}
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <p>{estimate.salesRep}</p>
+                          <div className="flex space-x-2">
+                            <Link
+                              href={`/estimates/${estimate.id}/print`}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Print
+                            </Link>
+                            <button
+                              onClick={(e) => handleDelete(estimate.id, e)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

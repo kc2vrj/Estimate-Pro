@@ -1,7 +1,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X, User, FileText, LogOut, Users } from 'lucide-react';
+import { Menu, X, User, FileText, LogOut, Users, Clock } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Layout({ children }) {
@@ -11,6 +11,7 @@ export default function Layout({ children }) {
 
   const navigation = [
     { name: 'Estimates', href: '/estimates', icon: FileText },
+    { name: 'Timesheets', href: '/timesheets', icon: Clock },
     ...(session?.user?.role === 'admin' ? [
       { name: 'Users', href: '/admin/users', icon: Users }
     ] : []),

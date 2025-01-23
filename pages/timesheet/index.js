@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { Clock, Calendar, Building2, FileText, Trash2, Edit2 } from 'lucide-react';
 

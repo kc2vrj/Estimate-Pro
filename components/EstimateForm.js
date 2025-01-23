@@ -26,6 +26,26 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
 
   const [items, setItems] = useState(initialData?.items || []);
 
+  // Fetch next estimate number when form is initialized
+  useEffect(() => {
+    if (!initialData && !formData.number) {
+      fetchNextEstimateNumber();
+    }
+  }, []);
+
+  const fetchNextEstimateNumber = async () => {
+    try {
+      const year = new Date().getFullYear();
+      const response = await fetch(`/api/estimates/next-number?year=${year}`);
+      if (!response.ok) throw new Error('Failed to fetch estimate number');
+      const { number } = await response.json();
+      setFormData(prev => ({ ...prev, number }));
+    } catch (err) {
+      setError('Failed to generate estimate number');
+      console.error('Error fetching estimate number:', err);
+    }
+  };
+
   useEffect(() => {
     // Clear messages after 3 seconds
     if (message || error) {
@@ -91,23 +111,26 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
       setError('');
       setMessage('');
       
+      // Calculate total amount
+      const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+      const totalWithTax = total + (total * (formData.salesTax / 100));
+
       await onSubmit({
         ...formData,
+        total_amount: totalWithTax,
         items: items.map(item => ({
           ...item,
-          total: calculateItemTotal(item)
+          total: item.quantity * item.price
         }))
       });
       setMessage('Estimate saved successfully');
     } catch (error) {
       console.error('Error saving estimate:', error);
-      setError('Failed to save estimate');
+      setError(error.message || 'Failed to save estimate');
     } finally {
       setLoading(false);
     }
   };
-
-  const total = items.reduce((sum, item) => sum + (item.total || 0), 0);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -218,13 +241,17 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <span className="font-semibold min-w-[80px] text-right">Estimate #:</span>
+                <label htmlFor="number" className="block text-sm font-medium text-gray-700">
+                  Estimate #:
+                </label>
                 <input
                   type="text"
+                  name="number"
+                  id="number"
                   value={formData.number}
                   onChange={handleInputChange}
-                  className="text-right w-32 min-w-[128px]"
-                  readOnly={readOnly}
+                  className="mt-1 block w-32 min-w-[128px] rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  readOnly={!!initialData}
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -374,15 +401,15 @@ export default function EstimateForm({ initialData, onSubmit, readOnly }) {
           <div className="w-64 space-y-2">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span className="text-right">${total.toFixed(2)}</span>
+              <span className="text-right">${items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Sales Tax ({formData.salesTax}%):</span>
-              <span className="text-right">${(total * formData.salesTax / 100).toFixed(2)}</span>
+              <span className="text-right">${(items.reduce((sum, item) => sum + (item.quantity * item.price), 0) * formData.salesTax / 100).toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold">
               <span>Total:</span>
-              <span className="text-right">${(total + total * formData.salesTax / 100).toFixed(2)}</span>
+              <span className="text-right">${(items.reduce((sum, item) => sum + (item.quantity * item.price), 0) + items.reduce((sum, item) => sum + (item.quantity * item.price), 0) * formData.salesTax / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>

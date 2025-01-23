@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { dbOperations } from "../../../lib/db";
+import dbOperations from "../../../lib/db";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);

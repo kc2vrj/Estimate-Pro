@@ -1,12 +1,35 @@
 const sqlite3 = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const fs = require('fs');
 
 class User {
+  static _dbPath = null;
+
+  static setDatabasePath(dbPath) {
+    // Ensure the directory exists
+    const directory = path.dirname(dbPath);
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+    this._dbPath = dbPath;
+  }
+
+  static getDatabasePath() {
+    return this._dbPath || process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'estimates.db');
+  }
+
   static async initialize() {
     console.log('Starting database initialization...');
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     console.log('Database path:', dbPath);
+    
+    // Ensure directory exists
+    const directory = path.dirname(dbPath);
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+
     const db = sqlite3(dbPath);
     
     // First check if table exists
@@ -51,28 +74,27 @@ class User {
     if (!admin) {
       console.log('Creating admin user...');
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      console.log('Generated hash length:', hashedPassword.length);
       
-      // Verify the hash works
-      const verifyHash = await bcrypt.compare(adminPassword, hashedPassword);
-      console.log('Verified hash works:', verifyHash);
+      const insertAdmin = db.prepare(`
+        INSERT INTO users (email, password, name, role, is_approved) 
+        VALUES (?, ?, ?, ?, ?)
+      `);
       
-      db.prepare(
-        'INSERT INTO users (email, password, name, role, is_approved) VALUES (?, ?, ?, ?, ?)'
-      ).run(adminEmail, hashedPassword, 'Admin', 'admin', 1);
+      insertAdmin.run(
+        adminEmail, 
+        hashedPassword, 
+        'Admin User', 
+        'admin', 
+        1
+      );
       console.log('Admin user created successfully');
-    } else {
-      // Ensure existing admin has correct role and approval
-      db.prepare(
-        'UPDATE users SET role = ?, is_approved = ? WHERE email = ?'
-      ).run('admin', 1, adminEmail);
     }
-    
+
     db.close();
   }
 
   static async findByEmail(email) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     db.close();
@@ -80,7 +102,7 @@ class User {
   }
 
   static async findById(id) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     db.close();
@@ -88,7 +110,7 @@ class User {
   }
 
   static async create({ email, password, name }) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
@@ -140,7 +162,7 @@ class User {
   }
 
   static async getAllPendingUsers() {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     const users = db.prepare('SELECT id, email, name, created_at FROM users WHERE is_approved = 0 AND role = ?').all('user');
     db.close();
@@ -148,7 +170,7 @@ class User {
   }
 
   static async approveUser(userId) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     try {
       const result = db.prepare('UPDATE users SET is_approved = 1 WHERE id = ? AND role = ?').run(userId, 'user');
@@ -164,7 +186,7 @@ class User {
   }
 
   static async denyUser(userId) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     try {
       const result = db.prepare('DELETE FROM users WHERE id = ? AND role = ? AND is_approved = 0').run(userId, 'user');
@@ -180,7 +202,7 @@ class User {
   }
 
   static async getAllUsers() {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     const users = db.prepare('SELECT id, email, name, role, is_approved, created_at FROM users').all();
     db.close();
@@ -188,7 +210,7 @@ class User {
   }
 
   static async updateUser(userId, { name, email, role, is_approved }) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     try {
       // Don't allow changing admin's role or approval status
@@ -215,7 +237,7 @@ class User {
   }
 
   static async deleteUser(userId) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     try {
       // Check if this is an admin user
@@ -241,7 +263,7 @@ class User {
   }
 
   static async setUserRole(userId, role) {
-    const dbPath = path.join(process.cwd(), 'data', 'estimates.db');
+    const dbPath = this.getDatabasePath();
     const db = sqlite3(dbPath);
     try {
       // Don't allow changing admin's role

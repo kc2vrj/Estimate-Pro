@@ -1,29 +1,22 @@
-# Use Node.js LTS version
+# Build stage
 FROM node:20-slim AS builder
 
-# Install required system dependencies for better-sqlite3
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci
+RUN npm install react-hot-toast date-fns
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application
 COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
-# Production image
+# Production stage
 FROM node:20-slim
 
 # Install required runtime dependencies for better-sqlite3
@@ -35,18 +28,25 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy from builder
+# Copy package files first
 COPY --from=builder /app/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/scripts ./scripts
-
-# Make the startup script executable
-RUN chmod +x scripts/start.sh
+COPY .env* ./
 
 # Create data directory with correct permissions
-RUN mkdir -p data && chown -R node:node data
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
+# Set environment variables for NextAuth
+ENV NEXTAUTH_SECRET=estimatepro_secret_key_123
+ENV NODE_ENV=production
 
 # Switch to non-root user
 USER node
@@ -54,5 +54,7 @@ USER node
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Start the application using the startup script
-CMD ["./scripts/start.sh"]
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+CMD ["/bin/sh", "./scripts/start.sh"]

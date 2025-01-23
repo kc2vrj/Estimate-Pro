@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Save } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 
 export default function TimesheetForm() {

@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     }
 
     const { id } = req.query;
+    console.log('[API] Estimate ID:', id);
 
     if (!id) {
       return res.status(400).json({ message: 'Missing estimate ID' });
@@ -23,13 +24,43 @@ export default async function handler(req, res) {
     switch (req.method) {
       case 'GET':
         try {
+          console.log('[API] Getting estimate from database');
           const estimate = await db.getEstimate(id);
+          console.log('[API] Database response:', estimate);
+
           if (!estimate) {
             return res.status(404).json({ message: 'Estimate not found' });
           }
-          res.status(200).json(estimate);
+
+          // Ensure all required fields are present
+          const formattedEstimate = {
+            id: estimate.id,
+            number: estimate.number,
+            date: estimate.date,
+            po: estimate.po || '',
+            customer_name: estimate.customer_name || '',
+            customer_email: estimate.customer_email || '',
+            customer_phone: estimate.customer_phone || '',
+            salesRep: estimate.salesRep || '',
+            billToAddress: estimate.billToAddress || '',
+            workShipAddress: estimate.workShipAddress || '',
+            scopeOfWork: estimate.scopeOfWork || '',
+            exclusions: estimate.exclusions || '',
+            salesTax: estimate.salesTax || 0,
+            total_amount: estimate.total_amount || 0,
+            items: estimate.items ? estimate.items.map(item => ({
+              id: item.id,
+              quantity: item.quantity,
+              description: item.description,
+              price: item.price,
+              total: item.total
+            })) : []
+          };
+
+          console.log('[API] Formatted estimate:', formattedEstimate);
+          res.status(200).json(formattedEstimate);
         } catch (error) {
-          console.error('Error fetching estimate:', error);
+          console.error('[API] Error fetching estimate:', error);
           res.status(500).json({ message: error.message || 'Error fetching estimate' });
         }
         break;

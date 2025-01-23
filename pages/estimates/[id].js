@@ -11,6 +11,7 @@ export default function ViewEstimatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { data: session } = useSession();
+  const [isEditing, setIsEditing] = useState(mode === 'edit');
 
   useEffect(() => {
     if (id && session) {
@@ -20,82 +21,89 @@ export default function ViewEstimatePage() {
 
   const fetchEstimate = async () => {
     try {
+      console.log('Fetching estimate:', id);
       const response = await fetch(`/api/estimates/${id}`);
       if (!response.ok) throw new Error('Failed to fetch estimate');
       const data = await response.json();
       
-      // Ensure rows have the correct format
-      if (data.rows) {
-        data.rows = data.rows.map((row, index) => ({
-          ...row,
-          id: row.id || index + 1
-        }));
-      }
-
-      // Ensure totals are set
-      data.totals = {
-        subtotal: data.subtotal || 0,
-        salesTax: data.salesTax || 0,
-        total: data.total || 0
-      };
-
+      console.log('Raw estimate data:', data);
       setEstimate(data);
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching estimate:', error);
-      setError('Error loading estimate');
+    } catch (err) {
+      console.error('Error fetching estimate:', err);
+      setError(err.message);
       setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-  if (!estimate) return <div>Estimate not found</div>;
+  const handleUpdateEstimate = async (updatedData) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/estimates/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update estimate');
+      }
+
+      const updatedEstimate = await response.json();
+      setEstimate(updatedEstimate);
+      setIsEditing(false);
+      router.push(`/estimates/${id}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
+  if (!estimate) return <div className="p-4">No estimate found</div>;
 
   return (
-    <div>
-      <div className="p-6 print-hide">
-        <button
-          onClick={() => router.push('/estimates')}
-          className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
-        >
-          <ArrowLeft size={20} className="mr-2" />
-          Back to Estimates
-        </button>
-        {mode !== 'edit' && (
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-0">
+        <div className="flex items-center justify-between mb-4 px-8 py-2 no-print">
           <button
-            onClick={() => router.push(`/estimates/${id}?mode=edit`)}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            onClick={() => router.push('/estimates')}
+            className="flex items-center text-gray-600 hover:text-gray-800"
           >
-            <Edit size={20} />
-            Edit Estimate
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Estimates
           </button>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : error ? (
+          <div className="text-red-600 text-center p-4">{error}</div>
+        ) : estimate ? (
+          <EstimateForm
+            initialData={estimate}
+            onSubmit={handleUpdateEstimate}
+            readOnly={!isEditing}
+          />
+        ) : (
+          <div className="text-center p-4">No estimate found</div>
         )}
       </div>
-      <EstimateForm 
-        initialData={estimate} 
-        readOnly={mode !== 'edit'} 
-        isEditing={mode === 'edit'} 
-        onSubmit={async (data) => {
-          try {
-            const response = await fetch(`/api/estimates/${id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data)
-            });
-            
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.message || 'Failed to update estimate');
-            }
-            
-            router.push('/estimates');
-          } catch (error) {
-            console.error('Error updating estimate:', error);
-            alert('Error updating estimate: ' + error.message);
-          }
-        }} 
-      />
     </div>
   );
 }

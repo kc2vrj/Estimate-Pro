@@ -12,12 +12,8 @@ services:
       - NEXTAUTH_URL=https://unifi.kc2vrj.com:3000
       - NEXTAUTH_SECRET=estimatepro_secret_key_123
       - DATABASE_PATH=/app/data/estimates.db
-      # Optional SSL configuration
-      - #SSL_DOMAIN=${SSL_DOMAIN:-}
       - SSL_DOMAIN=unifi.kc2vrj.com
       - SSL_EMAIL=pnannery@gmail.com
-      #- SSL_EMAIL=${SSL_EMAIL:-}
-      
     restart: unless-stopped
     networks:
       - app_network

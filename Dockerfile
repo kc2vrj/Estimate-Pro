@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y gpg wget && \
     wget --no-check-certificate -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     apt-get update && apt-get install -y \
     curl \
+    certbot \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

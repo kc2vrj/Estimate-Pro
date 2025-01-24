@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import * as dbOperations from '../../../lib/db';
+import { getLatestEstimateNumber } from '../../../lib/db';
 
 export default async function handler(req, res) {
   console.log('[API] Handling next-number request');
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     console.log('[API] Year:', year);
 
     // Get the latest estimate number for this year
-    const nextNumber = await dbOperations.getLatestEstimateNumber(year);
+    const nextNumber = await getLatestEstimateNumber(year);
     console.log('[API] Next number:', nextNumber);
 
     return res.status(200).json({ number: nextNumber });
